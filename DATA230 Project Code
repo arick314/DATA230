@@ -1,0 +1,121 @@
+import pandas as pd
+
+data2020_1 = pd.read_csv("2020.csv")
+data2019 = pd.read_csv("2019.csv")
+
+print(len(data2020_1))
+print(len(data2019))
+
+data2019.sample(n=5)
+data2020_1.sample(n=5)
+
+data2020 = data2020_1.sample(n=450176, random_state=1)
+data2020["label"] = data2020["label"].map({"good":"benign","bad":"malicious"})
+data2020 = data2020[['url', 'label']]
+print(len(data2020))
+data2020.sample(n=5)
+
+data2019.drop(['Unnamed: 0', 'result'], axis=1, inplace=True, errors="ignore")
+#data2019.rename(columns={"result": "label"}, inplace=True)
+data2019.sample(n=5)
+
+data2020.drop_duplicates(subset ="url", inplace = True)
+data2019.drop_duplicates(subset ="url", inplace = True)
+
+data = pd.concat([data2020, data2019])
+data.drop_duplicates(subset ="url", inplace = True)
+
+#1
+data["url_length"] = data["url"].apply(lambda x: len(x))
+
+#2
+data["https"] = data["url"].apply(lambda x: 1 if x.startswith("https") else 0)
+
+#3 - Symbol Counts
+data["num_?"] = data["url"].apply(lambda x: x.count("?"))
+data["num_-"] = data["url"].apply(lambda x: x.count("-"))
+data["num__"] = data["url"].apply(lambda x: x.count("_"))
+data["num_."] = data["url"].apply(lambda x: x.count("."))
+data["num_/"] = data["url"].apply(lambda x: x.count("/"))
+data["num_="] = data["url"].apply(lambda x: x.count("="))
+data["num_;"] = data["url"].apply(lambda x: x.count(";"))
+data["num_@"] = data["url"].apply(lambda x: x.count("@"))
+data["num_+"] = data["url"].apply(lambda x: x.count("+"))
+
+# Number Special Symbols
+data["num_special_symbols"] = data["url"].apply(lambda x: (len(x) - sum(i.isdigit() for i in x) - sum(i.isalpha() for i in x) - x.count(".") - x.count("/") - 1))
+
+#4 - file types
+data["is_pdf"] = data["url"].apply(lambda x: 1 if x.endswith(".pdf") else 0)
+data["is_txt"] = data["url"].apply(lambda x: 1 if x.endswith(".txt") else 0)
+data["is_htm"] = data["url"].apply(lambda x: 1 if x.endswith(".htm") else 0)
+data["is_html"] = data["url"].apply(lambda x: 1 if x.endswith(".html") else 0)
+data["is_shtml"] = data["url"].apply(lambda x: 1 if x.endswith(".shtml") else 0)
+data["is_asp"] = data["url"].apply(lambda x: 1 if x.endswith("asp") else 0)
+data["is_cgi"] = data["url"].apply(lambda x: 1 if x.endswith("cgi") else 0)
+data["is_pl"] = data["url"].apply(lambda x: 1 if x.endswith("pl") else 0)
+data["is_php"] = data["url"].apply(lambda x: 1 if x.endswith("php") else 0)
+
+# Proportions Regular
+
+# Letter to number proportion
+data["ratio_digit_alpha"] = data["url"].apply(lambda x: sum(i.isdigit() for i in x) / sum(i.isalpha() for i in x))
+
+# non-period or / symbols (special) to length
+#data["ratio_digit_total"] = data["url"].apply(lambda x: sum(i.isdigit() for i in x) / len(x))
+#data["ratio_alpha_total"] = data["url"].apply(lambda x: sum(i.isalpha() for i in x) / len(x))
+data["ratio_special_symbols"] = data["url"].apply(lambda x: (len(x) - sum(i.isdigit() for i in x) - sum(i.isalpha() for i in x) - x.count(".") - x.count("/") - 1) / len(x) )
+
+# Explicit Word Searcher
+data["naughty_word_count"] = data["url"].apply(lambda x: x.count("porn") + x.count("xxx"))
+data["financial_word_count"] = data["url"].apply(lambda x: x.count("credit") + x.count("cash") + x.count("money") + x.count("dollars"))
+data["gambling_word_count"] = data["url"].apply(lambda x: x.count("gambling") + x.count("gamble") + x.count("poker") + x.count("holdem") + x.count("blackjack") + x.count("baccarat"))
+data["free_word_count"] = data["url"].apply(lambda x: x.count("free"))
+data["survey_word_count"] = data["url"].apply(lambda x: x.count("survey") + x.count("quiz"))
+
+def domain_labeller(x):
+    if ".com/" in x:
+        return "com"
+    elif ".org/" in x:
+        return "org"
+    elif ".net/" in x:
+        return "net"
+    elif ".in/" in x:
+        return "in"
+    elif ".ir/" in x:
+        return "ir"
+    elif ".au/" in x:
+        return "au"
+    elif ".uk/" in x:
+        return "uk"
+    elif ".de/" in x:
+        return "de"
+    elif ".br/" in x:
+        return "br"
+    elif ".gov/" in x:
+        return "gov"
+    elif ".fr/" in x:
+        return "fr"
+    elif ".biz/" in x:
+        return "biz"
+    elif ".edu/" in x:
+        return "edu"
+    elif ".xyz/" in x:
+        return "xyz"
+    elif ".live/" in x:
+        return "live"
+    elif ".buzz/" in x:
+        return "buzz"
+    elif ".gq/" in x:
+        return "gq"
+    elif ".tk/" in x:
+        return "tk"
+    else:
+        return "other"
+        
+# Is Domain
+data["domain"] = data["url"].apply(lambda x: domain_labeller(x))
+ 
+ data.to_csv('Data230_final3.csv', index=False)
+ 
+ 
